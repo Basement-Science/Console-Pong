@@ -5,26 +5,18 @@
         public int xTop { get; private set; }
         public int xBottom { get; private set; }
 
-        public Player(int v, int length = 8) {
-            this.xCenter = v;
+        public Player(int startPos, int length = 6) {
+            this.xCenter = startPos;
             this.length = length;
-            this.xTop = xCenter - this.length / 2;
-            this.xTop = xTop + this.length;
+            this.xTop = xCenter + Orientation.getNext(Orientation.Direction.UP, this.length / 2);
+            this.xBottom = xTop + Orientation.getNext(Orientation.Direction.DOWN, this.length);
         }
 
-        public void Move(GameField.Direction direction) {
-            switch (direction) {
-                case GameField.Direction.UP:
-                    xCenter += 1;
-                    xTop += 1;
-                    xBottom += 1;
-                    break;
-                case GameField.Direction.DOWN:
-                    xCenter -= 1;
-                    xTop -= 1;
-                    xBottom -= 1;
-                    break;
-            }
+        public void Move(Orientation.Direction direction, int amount = 1) {
+            int tmp = Orientation.getNext(direction, amount);
+            xCenter += tmp;
+            xTop += tmp;
+            xBottom += tmp;
         }
     }
 }

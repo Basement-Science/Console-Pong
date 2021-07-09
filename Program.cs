@@ -4,12 +4,13 @@ using System.Threading.Tasks;
 
 namespace ConsolePong {
     class Program {
-        private static GameField gameTable = new(32, 64);
+        private static GameField gameField = new(25, 120);
         static async Task Main(string[] args) {
             var inputHandler = new Task(ReadKeys);
             var outputHandler = new Task(PrintGameField);
 
             Console.CancelKeyPress += new ConsoleCancelEventHandler(ExitHandler);
+            Console.CursorVisible = false;
 
             inputHandler.Start();
             outputHandler.Start();
@@ -27,20 +28,16 @@ namespace ConsolePong {
 
                 switch (keyInfo.Key) {
                     case ConsoleKey.DownArrow:
-                        Console.WriteLine("downArrow");
-                        gameTable.Move(gameTable.player_2, GameField.Direction.DOWN);
+                        gameField.Move(gameField.player_2, Orientation.Direction.DOWN);
                         break;
                     case ConsoleKey.UpArrow:
-                        Console.WriteLine("upArrow");
-                        gameTable.Move(gameTable.player_2, GameField.Direction.UP);
+                        gameField.Move(gameField.player_2, Orientation.Direction.UP);
                         break;
                     case ConsoleKey.S:
-                        Console.WriteLine("s");
-                        gameTable.Move(gameTable.player_1, GameField.Direction.DOWN);
+                        gameField.Move(gameField.player_1, Orientation.Direction.DOWN);
                         break;
                     case ConsoleKey.W:
-                        Console.WriteLine("w");
-                        gameTable.Move(gameTable.player_1, GameField.Direction.UP);
+                        gameField.Move(gameField.player_1, Orientation.Direction.UP);
                         break;
                     default:
                         break;
@@ -50,8 +47,8 @@ namespace ConsolePong {
 
         static void PrintGameField() {
             while (true) {
-                Console.WriteLine("Hello World!");
-                Thread.Sleep(100);
+                //Thread.Sleep(100);
+                gameField.DrawField();
             }
         }
     }
