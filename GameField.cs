@@ -1,7 +1,9 @@
 ﻿using Pastel;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Linq.Enumerable;
@@ -33,6 +35,28 @@ namespace ConsolePong {
                     throw new ArgumentOutOfRangeException("invalid Enum value");
             }
         }
+
+        public enum TextAlignment { LEFT, CENTER, RIGHT }
+        public static StringBuilder OverWrite(this StringBuilder builder, string insert, 
+            int startPos, TextAlignment align = TextAlignment.LEFT) {
+            switch (align) {
+                case TextAlignment.LEFT:
+                    return builder.Remove(startPos, insert.Length)
+                        .Insert(startPos, insert);
+                    break;
+                case TextAlignment.CENTER:
+                    return builder.Remove(startPos - (insert.Length /2), insert.Length)
+                        .Insert(startPos - (insert.Length / 2), insert);
+                    break;
+                case TextAlignment.RIGHT:
+                    return builder.Remove(startPos - insert.Length, insert.Length)
+                        .Insert(startPos - insert.Length, insert);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("invalid Enum value");
+            }
+            
+        }
     }
 
     class GameField {
@@ -48,8 +72,8 @@ namespace ConsolePong {
 
         private int xMid;
 
-        private string FieldBorder = new("");
-        private (int Left, int Top) ConsolePos;
+        private string FieldBorder;
+        private (int Left, int Top) ConsolePos_Field, ConsolePos_Score;
 
         public GameField(int height, int width) {
             chArray = new char[height, width];
@@ -75,13 +99,34 @@ namespace ConsolePong {
                 foreach (int x in Range(xStart, height)) {
                     chArray[x, y] = ' ';
                 }
-                FieldBorder += '#';
             }
-            FieldBorder = FieldBorder.Pastel("#FF7800");
+            FieldBorder = new string('#', width).Pastel("#FF7800");
+
+            // print header
+            Console.WriteLine(new StringBuilder(new string('=', chArray.GetLength(1)))
+                .OverWrite("< ConsolePong " +
+                FileVersionInfo.GetVersionInfo(
+                Assembly.GetExecutingAssembly().Location).ProductVersion.ToString() + $" >", 
+                width/2, Orientation.TextAlignment.CENTER).ToString().Pastel("#FFFF00"));
+
             Console.WriteLine(FieldBorder);
-            ConsolePos = Console.GetCursorPosition();
+            ConsolePos_Field = Console.GetCursorPosition();
             DrawField();
             Console.WriteLine(FieldBorder);
+
+            ConsolePos_Score = Console.GetCursorPosition();
+            PrintScoreBar();
+        }
+
+        public void PrintScoreBar() {
+            StringBuilder Score = new(new string('=', chArray.GetLength(1)));
+
+            Score.OverWrite(" Player 1 (ctrl: w/s) ", 0, Orientation.TextAlignment.LEFT);
+            Score.OverWrite($" {player_1.score} <-- Scores --> {player_2.score} ", Score.Length / 2, Orientation.TextAlignment.CENTER);
+            Score.OverWrite(" (ctrl: up / down) Player 2 ", Score.Length, Orientation.TextAlignment.RIGHT);
+
+            Console.SetCursorPosition(ConsolePos_Score.Left, ConsolePos_Score.Top);
+            Console.WriteLine(Score.ToString().Pastel("#FFFF00"));
         }
 
         private bool isAtTop(Player player) {
@@ -96,7 +141,7 @@ namespace ConsolePong {
             return (!x.isAbove(player.xTop)) && (!x.isBelow(player.xBottom));
         }
         public void DrawField() {
-            Console.SetCursorPosition(ConsolePos.Left, ConsolePos.Top);
+            Console.SetCursorPosition(ConsolePos_Field.Left, ConsolePos_Field.Top);
             for (int x = xEnd; x >= xStart; x--) {
                 chArray[x, yStart] = isBat(x, player_1) ? '#' : ' ';
                 chArray[x, yEnd] = isBat(x, player_2) ? '#' : ' ';

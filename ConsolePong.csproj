@@ -3,6 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
+    <Authors>Basement-Science</Authors>
+    <Version>1.01</Version>
   </PropertyGroup>
 
   <ItemGroup>

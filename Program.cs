@@ -135,6 +135,7 @@ namespace ConsolePong {
             while (true) {
                 Thread.Sleep(10);
                 gameField.DrawField();
+                gameField.PrintScoreBar();
             }
         }
 
