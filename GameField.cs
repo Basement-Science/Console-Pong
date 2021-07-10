@@ -46,6 +46,8 @@ namespace ConsolePong {
         private readonly int xTop, xBottom;
         private readonly int yLeft, yRight;
 
+        private int xMid;
+
         private string FieldBorder = new("");
         private (int Left, int Top) ConsolePos;
 
@@ -62,7 +64,7 @@ namespace ConsolePong {
             yRight = Orientation.getNext(Orientation.Direction.RIGHT, yEnd);
             /* END define where UP-DOWN and LEFT-RIGHT is */
 
-            int xMid = chArray.GetLength(0) / 2;
+            xMid = chArray.GetLength(0) / 2;
             ball = new(xMid, chArray.GetLength(1) / 2);
             player_1 = new(xMid);
             player_2 = new(xMid);
@@ -121,6 +123,48 @@ namespace ConsolePong {
                 default:
                     throw new ArgumentOutOfRangeException("Cannot move in this direction. ");
             }
+        }
+
+        public void ProcessBall() {
+            var nextPos = ball.getNextPos();
+            int x = Math.Min(Math.Max((int)Math.Round(nextPos.X), xStart), xEnd);
+            int y = Math.Min(Math.Max((int)Math.Round(nextPos.Y), yStart), yEnd);
+
+            bool drained = false;
+
+            if (y == yLeft) {
+                if (isBat(x, player_1)) {
+                    ball.reflect_bat();
+                } else {
+                    drained = true;
+                    chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
+                    drainedBall(player_2);
+                }
+            } else if (y == yRight) {
+                if (isBat(x, player_2)) {
+                    ball.reflect_bat();
+                } else {
+                    drained = true;
+                    chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
+                    drainedBall(player_1);
+                }
+            }
+
+            if (x == xTop || x == xBottom) {
+                ball.reflect_borders();
+            }
+
+            if (!drained) {
+                chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
+                ball.move();
+                chArray[ball.renderPos.x, ball.renderPos.y] = ball.symbol;
+            }
+        }
+
+        private void drainedBall(Player winner) {
+            ball.Dispose();
+            ball = new Ball(xMid, chArray.GetLength(1) / 2);
+            winner.addScore();
         }
     }
 }

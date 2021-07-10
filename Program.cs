@@ -11,6 +11,7 @@ namespace ConsolePong {
         static async Task Main(string[] args) {
             var inputHandler = new Task(ReadKeys);
             var outputHandler = new Task(PrintGameField);
+            var ballHandler = new Task(ballTicker);
 
             Console.CancelKeyPress += new ConsoleCancelEventHandler(ExitHandler);
             Console.CursorVisible = false;
@@ -20,7 +21,11 @@ namespace ConsolePong {
 
             inputHandler.Start();
             outputHandler.Start();
-            while (true) { }
+            ballHandler.Start();
+
+            await inputHandler;
+            await outputHandler;
+            await ballHandler;
         }
 
         private static void ExitHandler(object sender, ConsoleCancelEventArgs e) {
@@ -121,14 +126,22 @@ namespace ConsolePong {
                             break;
                     }
                 }
+                Thread.Sleep(1);
             }
             return;
         }
 
         static void PrintGameField() {
             while (true) {
-                //Thread.Sleep(100);
+                Thread.Sleep(10);
                 gameField.DrawField();
+            }
+        }
+
+        private static void ballTicker() {
+            while (true) {
+                Thread.Sleep(10);
+                gameField.ProcessBall();
             }
         }
     }

@@ -2,21 +2,63 @@
 using System.Numerics;
 
 namespace ConsolePong {
-    internal class Ball {
-        private int x;
-        private int y;
-        private char symbol = 'O';
-        Vector2 moveVector = new();
+    internal class Ball : IDisposable {
+        public char symbol = 'O';
+        public (int x, int y) renderPos;
+        private Vector2 pos;
+        private Vector2 moveVector = new();
 
         private static Random random = new();
         
+        // Creates a Ball with random starting momentum.
         public Ball(int x, int y) {
-            this.x = x;
-            this.y = y;
+            renderPos.x = x;
+            renderPos.y = y;
+            pos = new(x, y);
 
-            double angle = random.NextDouble() * Math.PI;
-            moveVector.X = (float)(Math.Cos(angle) - 1.0 * Math.Sin(angle));
-            moveVector.Y = (float)(Math.Sin(angle) + 1.0 * Math.Cos(angle));
+            // get a starting angle
+            double angle;
+            do {
+                angle = (random.NextDouble() * 2 * Math.PI);
+            } while ( //only allow flat-ish paths
+            angle <= Math.PI/4 || angle >= 7 * Math.PI / 4 ||
+            angle >= 3 * Math.PI/4 && angle <= 5 * Math.PI / 4
+            );
+
+            // convert angle into 2D vector
+            moveVector = new(
+                (float)(Math.Cos(angle)),
+                (float)(Math.Sin(angle)));
+            // scale travel distance per step
+            moveVector = Vector2.Divide(moveVector, 3);
+            return;
+        }
+
+        // move the ball along its trajectory
+        public void move() {
+            pos = getNextPos();
+            renderPos.x = (int)Math.Round(pos.X);
+            renderPos.y = (int)Math.Round(pos.Y);
+        }
+
+        // return position after the next move() execution
+        public Vector2 getNextPos() {
+            return Vector2.Add(pos, moveVector);
+        }
+
+        // reverse direction on a player's bat, and speed up the ball
+        public void reflect_bat() {
+            moveVector.Y = -moveVector.Y;
+            moveVector = Vector2.Multiply(moveVector, 1.2f);
+        }
+
+        // reverse vertical direction when Ball hits the top or bottom borders
+        public void reflect_borders() {
+            moveVector.X = -moveVector.X;
+        }
+
+        public void Dispose() {
+            //throw new NotImplementedException();
         }
     }
 }
