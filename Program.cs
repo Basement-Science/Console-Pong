@@ -141,7 +141,7 @@ namespace ConsolePong {
         private static void ballTicker() {
             while (true) {
                 Thread.Sleep(10);
-                gameField.ProcessBall();
+                gameField.ProcessBalls();
             }
         }
     }

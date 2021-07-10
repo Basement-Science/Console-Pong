@@ -37,7 +37,7 @@ namespace ConsolePong {
 
     class GameField {
         char[,] chArray;
-        Ball ball;
+        List<Ball> balls = new();
         public Player player_1, player_2;
 
         private readonly int xStart = 0, xEnd;
@@ -65,7 +65,8 @@ namespace ConsolePong {
             /* END define where UP-DOWN and LEFT-RIGHT is */
 
             xMid = chArray.GetLength(0) / 2;
-            ball = new(xMid, chArray.GetLength(1) / 2);
+            balls.Add(new Ball(xMid, chArray.GetLength(1) / 2));
+            balls.Add(new Ball(xMid, chArray.GetLength(1) / 2));
             player_1 = new(xMid);
             player_2 = new(xMid);
 
@@ -125,45 +126,51 @@ namespace ConsolePong {
             }
         }
 
-        public void ProcessBall() {
-            var nextPos = ball.getNextPos();
-            int x = Math.Min(Math.Max((int)Math.Round(nextPos.X), xStart), xEnd);
-            int y = Math.Min(Math.Max((int)Math.Round(nextPos.Y), yStart), yEnd);
+        public void ProcessBalls() {
+            foreach (var ball in balls) {
+                var nextPos = ball.getNextPos();
+                int x = Math.Min(Math.Max((int)Math.Round(nextPos.X), xStart), xEnd);
+                int y = Math.Min(Math.Max((int)Math.Round(nextPos.Y), yStart), yEnd);
 
-            bool drained = false;
+                bool drained = false;
 
-            if (y == yLeft) {
-                if (isBat(x, player_1)) {
-                    ball.reflect_bat();
-                } else {
-                    drained = true;
-                    chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
-                    drainedBall(player_2);
+                if (y == yLeft) {
+                    if (isBat(x, player_1)) {
+                        ball.reflect_bat();
+                    } else {
+                        drained = true;
+                        chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
+                        drainedBall(player_2, ball);
+                    }
+                } else if (y == yRight) {
+                    if (isBat(x, player_2)) {
+                        ball.reflect_bat();
+                    } else {
+                        drained = true;
+                        chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
+                        drainedBall(player_1, ball);
+                    }
                 }
-            } else if (y == yRight) {
-                if (isBat(x, player_2)) {
-                    ball.reflect_bat();
-                } else {
-                    drained = true;
+
+                if (x == xTop || x == xBottom) {
+                    ball.reflect_borders();
+                }
+
+                if (!drained) {
                     chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
-                    drainedBall(player_1);
+                    ball.move();
+                    chArray[ball.renderPos.x, ball.renderPos.y] = ball.symbol;
                 }
             }
-
-            if (x == xTop || x == xBottom) {
-                ball.reflect_borders();
-            }
-
-            if (!drained) {
-                chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
-                ball.move();
-                chArray[ball.renderPos.x, ball.renderPos.y] = ball.symbol;
+            int removed = balls.RemoveAll(b => b.killMe == true);
+            while (removed > 0) {
+                balls.Add(new Ball(xMid, chArray.GetLength(1) / 2));
+                removed--;
             }
         }
 
-        private void drainedBall(Player winner) {
+        private void drainedBall(Player winner, Ball ball) {
             ball.Dispose();
-            ball = new Ball(xMid, chArray.GetLength(1) / 2);
             winner.addScore();
         }
     }

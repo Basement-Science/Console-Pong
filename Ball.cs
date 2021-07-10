@@ -8,6 +8,8 @@ namespace ConsolePong {
         private Vector2 pos;
         private Vector2 moveVector = new();
 
+        public bool killMe { get; private set; } = false;
+
         private static Random random = new();
         
         // Creates a Ball with random starting momentum.
@@ -58,7 +60,7 @@ namespace ConsolePong {
         }
 
         public void Dispose() {
-            //throw new NotImplementedException();
+            killMe = true;
         }
     }
 }
