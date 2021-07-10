@@ -8,6 +8,8 @@ namespace ConsolePong {
         private static GameField gameField = new(25, 120);
         private static Keyboard keyboard = new Keyboard(new DirectInput());
 
+        private static volatile bool keepRunning = true;
+
         static async Task Main(string[] args) {
             var inputHandler = new Task(ReadKeys);
             var outputHandler = new Task(PrintGameField);
@@ -15,6 +17,7 @@ namespace ConsolePong {
 
             Console.CancelKeyPress += new ConsoleCancelEventHandler(ExitHandler);
             Console.CursorVisible = false;
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             keyboard.Properties.BufferSize = 128;
             keyboard.Acquire();
@@ -28,7 +31,8 @@ namespace ConsolePong {
             await ballHandler;
         }
 
-        private static void ExitHandler(object sender, ConsoleCancelEventArgs e) {
+        protected static void ExitHandler(object sender, ConsoleCancelEventArgs e) {
+            keepRunning = false;
             e.Cancel = true;
         }
 
@@ -36,28 +40,32 @@ namespace ConsolePong {
             public Key assignedKey { get; private set; }
             private Task task;
             private Action action;
+            private CancellationTokenSource cts;
 
             private volatile bool run = false;
 
             private void spam() {
                 while (run) {
                     action.Invoke();
-                    Thread.Sleep(50);
+                    Task.WaitAny(Task.Delay(50, cts.Token));
                 }
             }
 
             public void startSpam() {
                 if (task.Status == TaskStatus.Created) {
+                    // normal situation
                     run = true;
+                    cts = new();
                     task.Start();
                 } else {
-                    throw new ThreadInterruptedException("something wrong with spammer for " + assignedKey);
+                    throw new ThreadInterruptedException($"something wrong with spammer for {assignedKey} key.");
                 }
             }
 
-            public async void stopSpam() {
+            public void stopSpam() {
                 run = false;
-                await task;
+                cts.Cancel();
+                task.Wait();
                 task.Dispose();
                 task = new Task(spam);
             }
@@ -71,16 +79,16 @@ namespace ConsolePong {
 
         static void ReadKeys() {
             Action action_W = new Action(() => {
-                gameField.Move(gameField.player_1, Orientation.Direction.UP);
+                gameField.Move(gameField.player_1, Misc.Direction.UP);
             });
             Action action_S = new Action(() => {
-                gameField.Move(gameField.player_1, Orientation.Direction.DOWN);
+                gameField.Move(gameField.player_1, Misc.Direction.DOWN);
             });
             Action action_Up = new Action(() => {
-                gameField.Move(gameField.player_2, Orientation.Direction.UP);
+                gameField.Move(gameField.player_2, Misc.Direction.UP);
             });
             Action action_Down = new Action(() => {
-                gameField.Move(gameField.player_2, Orientation.Direction.DOWN);
+                gameField.Move(gameField.player_2, Misc.Direction.DOWN);
             });
 
             ActionSpammer spammer_W = new ActionSpammer(Key.W, action_W);
@@ -88,7 +96,7 @@ namespace ConsolePong {
             ActionSpammer spammer_Up = new ActionSpammer(Key.Up, action_Up);
             ActionSpammer spammer_Down = new ActionSpammer(Key.Down, action_Down);
 
-            while (true) {
+            while (keepRunning) {
                 keyboard.Poll();
                 var buffer = keyboard.GetBufferedData();
                 foreach (KeyboardUpdate update in buffer) {
@@ -128,20 +136,19 @@ namespace ConsolePong {
                 }
                 Thread.Sleep(1);
             }
-            return;
         }
 
-        static void PrintGameField() {
-            while (true) {
-                Thread.Sleep(10);
+        private static void PrintGameField() {
+            while (keepRunning) {
+                Thread.Sleep(4);
                 gameField.DrawField();
                 gameField.PrintScoreBar();
             }
         }
 
         private static void ballTicker() {
-            while (true) {
-                Thread.Sleep(10);
+            while (keepRunning) {
+                Thread.Sleep(4);
                 gameField.ProcessBalls();
             }
         }

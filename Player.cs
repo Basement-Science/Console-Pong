@@ -9,12 +9,12 @@
         public Player(int startPos, int length = 6) {
             this.xCenter = startPos;
             this.length = length;
-            this.xTop = xCenter + Orientation.getNext(Orientation.Direction.UP, this.length / 2);
-            this.xBottom = xTop + Orientation.getNext(Orientation.Direction.DOWN, this.length - 1);
+            this.xTop = xCenter + Misc.getNext(Misc.Direction.UP, this.length / 2);
+            this.xBottom = xTop + Misc.getNext(Misc.Direction.DOWN, this.length - 1);
         }
 
-        public void Move(Orientation.Direction direction, int amount = 1) {
-            int tmp = Orientation.getNext(direction, amount);
+        public void Move(Misc.Direction direction, int amount = 1) {
+            int tmp = Misc.getNext(direction, amount);
             xCenter += tmp;
             xTop += tmp;
             xBottom += tmp;

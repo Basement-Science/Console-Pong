@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -9,63 +10,13 @@ using System.Threading.Tasks;
 using static System.Linq.Enumerable;
 
 namespace ConsolePong {
-
-    public static class Orientation {
-        public static bool isAbove(this int a, int b) {
-            return a > b;
-        }
-
-        public static bool isBelow(this int a, int b) {
-            return a < b;
-        }
-
-        public enum Direction { UP, DOWN, LEFT, RIGHT }
-
-        public static int getNext(Direction dir, int amount = 1) {
-            switch (dir) {
-                case Direction.UP:
-                    return amount;
-                case Direction.DOWN:
-                    return -amount;
-                case Direction.LEFT:
-                    return -amount;
-                case Direction.RIGHT:
-                    return amount;
-                default:
-                    throw new ArgumentOutOfRangeException("invalid Enum value");
-            }
-        }
-
-        public enum TextAlignment { LEFT, CENTER, RIGHT }
-        public static StringBuilder OverWrite(this StringBuilder builder, string insert, 
-            int startPos, TextAlignment align = TextAlignment.LEFT) {
-            switch (align) {
-                case TextAlignment.LEFT:
-                    return builder.Remove(startPos, insert.Length)
-                        .Insert(startPos, insert);
-                    break;
-                case TextAlignment.CENTER:
-                    return builder.Remove(startPos - (insert.Length /2), insert.Length)
-                        .Insert(startPos - (insert.Length / 2), insert);
-                    break;
-                case TextAlignment.RIGHT:
-                    return builder.Remove(startPos - insert.Length, insert.Length)
-                        .Insert(startPos - insert.Length, insert);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException("invalid Enum value");
-            }
-            
-        }
-    }
-
     class GameField {
         char[,] chArray;
         List<Ball> balls = new();
         public Player player_1, player_2;
 
-        private readonly int xStart = 0, xEnd;
-        private readonly int yStart = 0, yEnd;
+        public readonly int xStart = 0, xEnd;
+        public readonly int yStart = 0, yEnd;
 
         private readonly int xTop, xBottom;
         private readonly int yLeft, yRight;
@@ -75,6 +26,14 @@ namespace ConsolePong {
         private string FieldBorder;
         private (int Left, int Top) ConsolePos_Field, ConsolePos_Score;
 
+        private const char batChar = '█'; // unicode full block
+        private const char borderChar = '█'; // unicode full block
+        private const char headerChar = '═'; // unicode box drawing doubleLine char
+
+        private readonly Color borderColor = Color.DarkOrange;
+        private readonly Color textColor = Color.Yellow;
+        private readonly Color fieldColor = Color.RoyalBlue;
+
         public GameField(int height, int width) {
             chArray = new char[height, width];
 
@@ -82,15 +41,14 @@ namespace ConsolePong {
             yEnd = width - 1;
 
             /* BEGIN define where UP-DOWN and LEFT-RIGHT is */
-            xTop = Orientation.getNext(Orientation.Direction.UP, xEnd);
+            xTop = Misc.getNext(Misc.Direction.UP, xEnd);
             xBottom = 0;
             yLeft = 0;
-            yRight = Orientation.getNext(Orientation.Direction.RIGHT, yEnd);
+            yRight = Misc.getNext(Misc.Direction.RIGHT, yEnd);
             /* END define where UP-DOWN and LEFT-RIGHT is */
 
             xMid = chArray.GetLength(0) / 2;
-            balls.Add(new Ball(xMid, chArray.GetLength(1) / 2));
-            balls.Add(new Ball(xMid, chArray.GetLength(1) / 2));
+            balls.Add(new Ball(this, xMid, chArray.GetLength(1) / 2));
             player_1 = new(xMid);
             player_2 = new(xMid);
 
@@ -100,14 +58,14 @@ namespace ConsolePong {
                     chArray[x, y] = ' ';
                 }
             }
-            FieldBorder = new string('#', width).Pastel("#FF7800");
+            FieldBorder = new string(borderChar, width).Pastel(borderColor);
 
             // print header
-            Console.WriteLine(new StringBuilder(new string('=', chArray.GetLength(1)))
+            Console.WriteLine(new StringBuilder(new string(headerChar, chArray.GetLength(1)))
                 .OverWrite("< ConsolePong " +
                 FileVersionInfo.GetVersionInfo(
                 Assembly.GetExecutingAssembly().Location).ProductVersion.ToString() + $" >", 
-                width/2, Orientation.TextAlignment.CENTER).ToString().Pastel("#FFFF00"));
+                width/2, Misc.TextAlignment.CENTER).ToString().Pastel(textColor));
 
             Console.WriteLine(FieldBorder);
             ConsolePos_Field = Console.GetCursorPosition();
@@ -119,14 +77,14 @@ namespace ConsolePong {
         }
 
         public void PrintScoreBar() {
-            StringBuilder Score = new(new string('=', chArray.GetLength(1)));
+            StringBuilder Score = new(new string(headerChar, chArray.GetLength(1)));
 
-            Score.OverWrite(" Player 1 (ctrl: w/s) ", 0, Orientation.TextAlignment.LEFT);
-            Score.OverWrite($" {player_1.score} <-- Scores --> {player_2.score} ", Score.Length / 2, Orientation.TextAlignment.CENTER);
-            Score.OverWrite(" (ctrl: up / down) Player 2 ", Score.Length, Orientation.TextAlignment.RIGHT);
+            Score.OverWrite(" Player 1 (ctrl: W/S) ", 0, Misc.TextAlignment.LEFT);
+            Score.OverWrite($" {player_1.score} <-- Scores --> {player_2.score} ", Score.Length / 2, Misc.TextAlignment.CENTER);
+            Score.OverWrite(" (ctrl: up/down) Player 2 ", Score.Length, Misc.TextAlignment.RIGHT);
 
             Console.SetCursorPosition(ConsolePos_Score.Left, ConsolePos_Score.Top);
-            Console.WriteLine(Score.ToString().Pastel("#FFFF00"));
+            Console.WriteLine(Score.ToString().Pastel(textColor));
         }
 
         private bool isAtTop(Player player) {
@@ -143,25 +101,27 @@ namespace ConsolePong {
         public void DrawField() {
             Console.SetCursorPosition(ConsolePos_Field.Left, ConsolePos_Field.Top);
             for (int x = xEnd; x >= xStart; x--) {
-                chArray[x, yStart] = isBat(x, player_1) ? '#' : ' ';
-                chArray[x, yEnd] = isBat(x, player_2) ? '#' : ' ';
+                chArray[x, yStart] = isBat(x, player_1) 
+                    ? batChar : chArray[x, yStart] == batChar ? ' ' : chArray[x, yStart];
+                chArray[x, yEnd] = isBat(x, player_2) 
+                    ? batChar : chArray[x, yEnd] == batChar ? ' ' : chArray[x, yEnd];
 
                 for (int i = yStart; i.isBelow(yEnd + 1);
-                    i = Orientation.getNext(Orientation.Direction.RIGHT, i + 1)) {
-                    Console.Write(chArray[x, i]);
+                    i = Misc.getNext(Misc.Direction.RIGHT, i + 1)) {
+                    Console.Write(chArray[x, i].ToString().Pastel(fieldColor));
                 }
                 Console.WriteLine();
             }
         }
 
-        public void Move(Player player, Orientation.Direction direction, int amount = 1) {
+        public void Move(Player player, Misc.Direction direction, int amount = 1) {
             switch (direction) {
-                case Orientation.Direction.UP:
+                case Misc.Direction.UP:
                     if (!isAtTop(player)) {
                         player.Move(direction, amount);
                     }
                     break;
-                case Orientation.Direction.DOWN:
+                case Misc.Direction.DOWN:
                     if (!isAtBottom(player)) {
                         player.Move(direction, amount);
                     }
@@ -172,51 +132,55 @@ namespace ConsolePong {
         }
 
         public void ProcessBalls() {
-            foreach (var ball in balls) {
+            foreach (var ball in new List<Ball>(balls)) {
                 var nextPos = ball.getNextPos();
-                int x = Math.Min(Math.Max((int)Math.Round(nextPos.X), xStart), xEnd);
-                int y = Math.Min(Math.Max((int)Math.Round(nextPos.Y), yStart), yEnd);
-
-                bool drained = false;
+                int x = Misc.boundValue(nextPos.X, xStart, xEnd);
+                int y = Misc.boundValue(nextPos.Y, yStart, yEnd);
 
                 if (y == yLeft) {
                     if (isBat(x, player_1)) {
-                        ball.reflect_bat();
+                        hitBat();
                     } else {
-                        drained = true;
                         chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
-                        drainedBall(player_2, ball);
+                        drainedBall(player_2, ball, x, y);
+                        continue;
                     }
                 } else if (y == yRight) {
                     if (isBat(x, player_2)) {
-                        ball.reflect_bat();
+                        hitBat();
                     } else {
-                        drained = true;
                         chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
-                        drainedBall(player_1, ball);
+                        drainedBall(player_1, ball, x, y);
+                        continue;
+                    }
+                }
+                void hitBat() {
+                    ball.reflect_bat();
+
+                    if (Misc.random.Next(100) >= 50) {
+                        balls.Add(ball.split());
                     }
                 }
 
                 if (x == xTop || x == xBottom) {
                     ball.reflect_borders();
                 }
-
-                if (!drained) {
-                    chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
-                    ball.move();
-                    chArray[ball.renderPos.x, ball.renderPos.y] = ball.symbol;
-                }
-            }
-            int removed = balls.RemoveAll(b => b.killMe == true);
-            while (removed > 0) {
-                balls.Add(new Ball(xMid, chArray.GetLength(1) / 2));
-                removed--;
-            }
+                chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
+                ball.move();
+                chArray[ball.renderPos.x, ball.renderPos.y] = ball.symbol;
+            } // end foreach
         }
 
-        private void drainedBall(Player winner, Ball ball) {
+        private void drainedBall(Player winner, Ball ball, int x, int y) {
             ball.Dispose();
             winner.addScore();
+
+            chArray[x, y] = (char)183; // middle dot ·
+            balls.Remove(ball);
+
+            if (balls.Count == 0) {
+                balls.Add(new Ball(this, xMid, chArray.GetLength(1) / 2));
+            }
         }
     }
 }

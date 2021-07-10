@@ -3,17 +3,17 @@ using System.Numerics;
 
 namespace ConsolePong {
     internal class Ball : IDisposable {
-        public char symbol = 'O';
+        public char symbol = '⬤'; // unicode full circle
         public (int x, int y) renderPos;
         private Vector2 pos;
         private Vector2 moveVector = new();
 
-        public bool killMe { get; private set; } = false;
+        GameField gameField;
 
-        private static Random random = new();
+        // public bool killMe { get; private set; } = false;
         
         // Creates a Ball with random starting momentum.
-        public Ball(int x, int y) {
+        public Ball(GameField gameField, int x, int y) {
             renderPos.x = x;
             renderPos.y = y;
             pos = new(x, y);
@@ -21,7 +21,7 @@ namespace ConsolePong {
             // get a starting angle
             double angle;
             do {
-                angle = (random.NextDouble() * 2 * Math.PI);
+                angle = (Misc.random.NextDouble() * 2 * Math.PI);
             } while ( //only allow flat-ish paths
             angle <= Math.PI/4 || angle >= 7 * Math.PI / 4 ||
             angle >= 3 * Math.PI/4 && angle <= 5 * Math.PI / 4
@@ -33,14 +33,15 @@ namespace ConsolePong {
                 (float)(Math.Sin(angle)));
             // scale travel distance per step
             moveVector = Vector2.Divide(moveVector, 3);
-            return;
+
+            this.gameField = gameField;
         }
 
         // move the ball along its trajectory
         public void move() {
             pos = getNextPos();
-            renderPos.x = (int)Math.Round(pos.X);
-            renderPos.y = (int)Math.Round(pos.Y);
+            renderPos.x = Misc.boundValue(pos.X, gameField.xStart, gameField.xEnd);
+            renderPos.y = Misc.boundValue(pos.Y, gameField.yStart, gameField.yEnd);
         }
 
         // return position after the next move() execution
@@ -60,7 +61,11 @@ namespace ConsolePong {
         }
 
         public void Dispose() {
-            killMe = true;
+
+        }
+
+        internal Ball split() {
+            return new Ball(gameField, this.renderPos.x, this.renderPos.y);
         }
     }
 }

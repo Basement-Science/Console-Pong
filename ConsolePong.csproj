@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <Authors>Basement-Science</Authors>
-    <Version>1.01</Version>
+    <Version>1.03</Version>
   </PropertyGroup>
 
   <ItemGroup>
