@@ -62,9 +62,9 @@ namespace ConsolePong {
 
             // print header
             Console.WriteLine(new StringBuilder(new string(headerChar, chArray.GetLength(1)))
-                .OverWrite("< ConsolePong " +
-                FileVersionInfo.GetVersionInfo(
-                Assembly.GetExecutingAssembly().Location).ProductVersion.ToString() + $" >", 
+                .OverWrite("< ConsolePong " + 
+                Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                .InformationalVersion + $" >", 
                 width/2, Misc.TextAlignment.CENTER).ToString().Pastel(textColor));
 
             Console.WriteLine(FieldBorder);
