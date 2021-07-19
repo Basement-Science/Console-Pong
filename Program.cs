@@ -144,6 +144,7 @@ namespace ConsolePong {
                 gameField.DrawField();
                 gameField.PrintScoreBar();
             }
+            gameField.ClearScreen();
         }
 
         private static void ballTicker() {

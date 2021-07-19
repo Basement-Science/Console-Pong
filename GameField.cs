@@ -23,7 +23,8 @@ namespace ConsolePong {
 
         private int xMid;
 
-        private string FieldBorder;
+        private readonly string FieldBorder;
+        private readonly string ClearLine;
         private (int Left, int Top) ConsolePos_Field, ConsolePos_Score;
 
         private const char batChar = '█'; // unicode full block
@@ -59,6 +60,7 @@ namespace ConsolePong {
                 }
             }
             FieldBorder = new string(borderChar, width).Pastel(borderColor);
+            ClearLine = new string(' ', width);
 
             // print header
             Console.WriteLine(new StringBuilder(new string(headerChar, chArray.GetLength(1)))
@@ -77,14 +79,33 @@ namespace ConsolePong {
         }
 
         public void PrintScoreBar() {
+            PrintScoreBarAt(ConsolePos_Score);
+        }
+
+        private void PrintScoreBarAt((int Left, int Top) consolePosition) {
+            Console.SetCursorPosition(consolePosition.Left, consolePosition.Top);
+            Console.WriteLine(getScoreBarString().Pastel(textColor));
+        }
+
+        private string getScoreBarString() {
             StringBuilder Score = new(new string(headerChar, chArray.GetLength(1)));
 
             Score.OverWrite(" Player 1 (ctrl: W/S) ", 0, Misc.TextAlignment.LEFT);
             Score.OverWrite($" {player_1.score} <-- Scores --> {player_2.score} ", Score.Length / 2, Misc.TextAlignment.CENTER);
             Score.OverWrite(" (ctrl: up/down) Player 2 ", Score.Length, Misc.TextAlignment.RIGHT);
+            return Score.ToString();
+        }
 
-            Console.SetCursorPosition(ConsolePos_Score.Left, ConsolePos_Score.Top);
-            Console.WriteLine(Score.ToString().Pastel(textColor));
+        public void ClearScreen() {
+            // start at the Border
+            ConsolePos_Field.Top -= 1;
+            PrintScoreBarAt(ConsolePos_Field);
+            // clear the remaining Lines.
+            for (int line = 0; line < yEnd + 2; line++) {
+                Console.WriteLine(ClearLine);
+            }
+            // finally set curser position so we can exit
+            Console.SetCursorPosition(ConsolePos_Field.Left, ConsolePos_Field.Top+1);
         }
 
         private bool isAtTop(Player player) {
@@ -106,24 +127,24 @@ namespace ConsolePong {
                 chArray[x, yEnd] = isBat(x, player_2) 
                     ? batChar : chArray[x, yEnd] == batChar ? ' ' : chArray[x, yEnd];
 
-                for (int i = yStart; i.isBelow(yEnd + 1);
-                    i = Misc.getNext(Misc.Direction.RIGHT, i + 1)) {
-                    Console.Write(chArray[x, i].ToString().Pastel(fieldColor));
+                for (int y = yStart; y.isBelow(yEnd + 1);
+                    y = Misc.getNext(Misc.Direction.RIGHT, y + 1)) {
+                    Console.Write(chArray[x, y].ToString().Pastel(fieldColor));
                 }
                 Console.WriteLine();
             }
         }
 
-        public void Move(Player player, Misc.Direction direction, int amount = 1) {
+        public void Move(Player player, Misc.Direction direction) {
             switch (direction) {
                 case Misc.Direction.UP:
                     if (!isAtTop(player)) {
-                        player.Move(direction, amount);
+                        player.Move(direction, 1);
                     }
                     break;
                 case Misc.Direction.DOWN:
                     if (!isAtBottom(player)) {
-                        player.Move(direction, amount);
+                        player.Move(direction, 1);
                     }
                     break;
                 default:
