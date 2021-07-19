@@ -52,6 +52,7 @@ namespace ConsolePong {
         private static void ProcessMice() {
             assignMice();
             miceInitialized = true;
+            int accu_L = 0, accu_R = 0;
             while (keepRunning) {
                 ManyMouseEvent mouseEvent;
                 while (ManyMouse.PollEvent(out mouseEvent) > 0) {
@@ -65,10 +66,24 @@ namespace ConsolePong {
                                 Misc.Direction direction = mouseEvent.value > 0 
                                     ? Misc.Direction.DOWN : Misc.Direction.UP;
 
+                                const int sensitivity = 16;
                                 if (mouseEvent.device == mouse_L) {
-                                    gameField.Move(gameField.player_1, direction);
-                                } else if (mouseEvent.device == mouse_R) {
-                                    gameField.Move(gameField.player_2, direction);
+                                    accu_L += mouseEvent.value;
+                                    //Console.WriteLine(accu_L);
+                                    //printMouseEvent(mouseEvent);
+                                    while (Math.Abs(accu_L) > sensitivity) { 
+                                        gameField.Move(gameField.player_1, direction);
+                                        accu_L -= accu_L > 0 ? sensitivity : accu_L < 0 ? -sensitivity : 0;
+                                    }
+                                }
+                                if (mouseEvent.device == mouse_R) {
+                                    accu_R += mouseEvent.value;
+                                    //Console.WriteLine(accu_R);
+                                    //printMouseEvent(mouseEvent);
+                                    while (Math.Abs(accu_R) > sensitivity) {
+                                        gameField.Move(gameField.player_2, direction);
+                                        accu_R -= accu_R > 0 ? sensitivity : accu_R < 0 ? -sensitivity : 0;
+                                    }
                                 }
                             } 
                             break;
@@ -119,7 +134,10 @@ namespace ConsolePong {
                                                 Console.Write($"   Please CLICK a button on RIGHT Player's mouse... ");
                                             } else {
                                                 mouse_R = mouseEvent.device;
-                                                Console.WriteLine("success!".Pastel(Color.Green));
+                                                Console.WriteLine( mouse_L != mouse_R ? 
+                                                    "success!".Pastel(Color.Green) : 
+                                                    "warning: selected the same device twice."
+                                                    .Pastel(Color.Yellow));
                                                 allAssigned = true;
                                             }
                                         }

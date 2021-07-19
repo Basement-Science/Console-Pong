@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Authors>Basement-Science</Authors>
-    <Version>1.04</Version>
+    <Version>1.06</Version>
 	
 	<Platforms>AnyCPU</Platforms>
   </PropertyGroup>
