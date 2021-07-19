@@ -2,16 +2,27 @@
 using System.Threading;
 using System.Threading.Tasks;
 using SharpDX.DirectInput;
+using ManyMouseSharp;
+using Pastel;
+using System.Drawing;
 
 namespace ConsolePong {
     class Program {
         private static GameField gameField = new(25, 120);
         private static Keyboard keyboard = new Keyboard(new DirectInput());
 
+        // interpret uint.MaxValue as invalid
+        private const uint mouseNotInitialized = uint.MaxValue;
+        private static uint mouse_L = mouseNotInitialized, mouse_R = mouseNotInitialized;
+
+        // for Thread communication
         private static volatile bool keepRunning = true;
+        private static volatile bool miceInitialized = false;
+        private static Key? lastKey = null;
 
         static async Task Main(string[] args) {
-            var inputHandler = new Task(ReadKeys);
+            var keyboardHandler = new Task(ReadKeys);
+            var mouseHandler = new Task(ProcessMice);
             var outputHandler = new Task(PrintGameField);
             var ballHandler = new Task(ballTicker);
 
@@ -21,14 +32,115 @@ namespace ConsolePong {
 
             keyboard.Properties.BufferSize = 128;
             keyboard.Acquire();
+            keyboardHandler.Start();
 
-            inputHandler.Start();
+            mouseHandler.Start();
+            while (!miceInitialized) {
+                Thread.Sleep(10);
+            }
+            Console.WriteLine("--> Starting game...");
+            Thread.Sleep(500);
             outputHandler.Start();
             ballHandler.Start();
 
-            await inputHandler;
+            await keyboardHandler;
+            await mouseHandler;
             await outputHandler;
             await ballHandler;
+        }
+
+        private static void ProcessMice() {
+            assignMice();
+            miceInitialized = true;
+            while (keepRunning) {
+                ManyMouseEvent mouseEvent;
+                while (ManyMouse.PollEvent(out mouseEvent) > 0) {
+                    switch (mouseEvent.type) {
+                        case ManyMouseEventType.MANYMOUSE_EVENT_ABSMOTION:
+                            // not implemented, ignore it
+                            break;
+                        case ManyMouseEventType.MANYMOUSE_EVENT_RELMOTION:
+                            if (mouseEvent.item == 1) {
+                                // the only real case, movement in Y direction
+                                Misc.Direction direction = mouseEvent.value > 0 
+                                    ? Misc.Direction.DOWN : Misc.Direction.UP;
+
+                                if (mouseEvent.device == mouse_L) {
+                                    gameField.Move(gameField.player_1, direction);
+                                } else if (mouseEvent.device == mouse_R) {
+                                    gameField.Move(gameField.player_2, direction);
+                                }
+                            } 
+                            break;
+                        case ManyMouseEventType.MANYMOUSE_EVENT_DISCONNECT:
+                            throw new NotImplementedException("Disconnecting a Mouse " +
+                                "and reacquiring it when it was in use is not supported.");
+                        case ManyMouseEventType.MANYMOUSE_EVENT_MAX:
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            // Prompts players to select their mice to be used.
+            void assignMice() {
+                ManyMouse.Init();
+                switch (ManyMouse.AmountOfMiceDetected) {
+                    case 0:
+                        Console.WriteLine("No Mouse detected. Only keyboard control will be available.");
+                        break;
+                    case 1:
+                        Console.WriteLine("1 Mouse detected. Please move the player that will use the keyboard. " +
+                            "The other player will be able to use the Mouse.");
+                        while (lastKey == null) { Thread.Sleep(10); }
+                        if (lastKey == Key.W || lastKey == Key.S) {
+                            mouse_L = 0;
+                        } else if (lastKey == Key.Up || lastKey == Key.Down) {
+                            mouse_R = 0;
+                        } else {
+                            // irrelevant key was pressed. Try again.
+                            goto case 1;
+                        }
+                        break;
+                    default:
+                        Console.Write($"Detected {ManyMouse.AmountOfMiceDetected} Mice.\n" +
+                            $"   Please CLICK a button on LEFT Player's mouse... ");
+                        ManyMouseEvent mouseEvent;
+                        bool allAssigned = false;
+                        while (!allAssigned) {
+                            while (ManyMouse.PollEvent(out mouseEvent) > 0) {
+                                switch (mouseEvent.type) {
+                                    case ManyMouseEventType.MANYMOUSE_EVENT_BUTTON:
+                                        if (mouseEvent.value == 1) {
+                                            // MouseButton DOWN
+                                            if (mouse_L == mouseNotInitialized) {
+                                                mouse_L = mouseEvent.device;
+                                                Console.WriteLine("success!".Pastel(Color.Green));
+                                                Console.Write($"   Please CLICK a button on RIGHT Player's mouse... ");
+                                            } else {
+                                                mouse_R = mouseEvent.device;
+                                                Console.WriteLine("success!".Pastel(Color.Green));
+                                                allAssigned = true;
+                                            }
+                                        }
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+            void printMouseEvent(ManyMouseEvent mouseEvent) {
+                Console.WriteLine(
+                        $"device: {mouseEvent.device}\n" +
+                        $"item: {mouseEvent.item}\n" +
+                        $"type: {mouseEvent.type}\n" +
+                        $"value: {mouseEvent.value}\n" +
+                        $"maxval: {mouseEvent.maxval}\n" +
+                        $"minval: {mouseEvent.minval}\n");
+            }
         }
 
         protected static void ExitHandler(object sender, ConsoleCancelEventArgs e) {
@@ -97,7 +209,7 @@ namespace ConsolePong {
                 keyboard.Poll();
                 var buffer = keyboard.GetBufferedData();
                 foreach (KeyboardUpdate update in buffer) {
-                    
+                    lastKey = update.Key;
                     switch (update.Key) {
                         case Key.W:
                             if (update.IsPressed) {
