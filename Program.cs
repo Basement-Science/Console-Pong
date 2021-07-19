@@ -36,10 +36,10 @@ namespace ConsolePong {
             e.Cancel = true;
         }
 
-        class ActionSpammer {
+        private class ActionSpammer {
             public Key assignedKey { get; private set; }
             private Task task;
-            private Action action;
+            private KeyPressedAction action;
             private CancellationTokenSource cts;
 
             private volatile bool run = false;
@@ -70,26 +70,23 @@ namespace ConsolePong {
                 task = new Task(spam);
             }
 
-            public ActionSpammer(Key key, Action action) {
+            public ActionSpammer(Key key, KeyPressedAction action) {
                 assignedKey = key;
                 this.action = action;
                 task = new Task(spam);
             }
         }
 
+        private delegate void KeyPressedAction();
         static void ReadKeys() {
-            Action action_W = new Action(() => {
-                gameField.Move(gameField.player_1, Misc.Direction.UP);
-            });
-            Action action_S = new Action(() => {
-                gameField.Move(gameField.player_1, Misc.Direction.DOWN);
-            });
-            Action action_Up = new Action(() => {
-                gameField.Move(gameField.player_2, Misc.Direction.UP);
-            });
-            Action action_Down = new Action(() => {
-                gameField.Move(gameField.player_2, Misc.Direction.DOWN);
-            });
+            KeyPressedAction action_W =
+                () => gameField.Move(gameField.player_1, Misc.Direction.UP);
+            KeyPressedAction action_S =
+                () => gameField.Move(gameField.player_1, Misc.Direction.DOWN);
+            KeyPressedAction action_Up =
+                () => gameField.Move(gameField.player_2, Misc.Direction.UP);
+            KeyPressedAction action_Down =
+                () => gameField.Move(gameField.player_2, Misc.Direction.DOWN);
 
             ActionSpammer spammer_W = new ActionSpammer(Key.W, action_W);
             ActionSpammer spammer_S = new ActionSpammer(Key.S, action_S);
