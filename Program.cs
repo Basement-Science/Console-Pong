@@ -21,8 +21,6 @@ namespace ConsolePong {
         private static volatile bool EscPressed = false;
         private static Key? lastKey = null;
 
-        private readonly string LoremIpsum = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.";
-
         static async Task Main(string[] args) {
             var keyboardHandler = new Task(ReadKeys);
             var mouseHandler = new Task(ProcessMice);
@@ -92,8 +90,11 @@ namespace ConsolePong {
                             } 
                             break;
                         case ManyMouseEventType.MANYMOUSE_EVENT_DISCONNECT:
-                            throw new NotImplementedException("Disconnecting a Mouse " +
-                                "and reacquiring it when it was in use is not supported.");
+                            if (mouseEvent.device == mouse_L || mouseEvent.device == mouse_R) {
+                                gameField.textArea.WriteToField("Disconnecting and reacquiring a Mouse is not supported.");
+                                gameField.textArea.WriteToField("Please restart the game or use the Keyboard.");
+                            }
+                            break;
                         case ManyMouseEventType.MANYMOUSE_EVENT_MAX:
                             break;
                         default:
@@ -111,6 +112,7 @@ namespace ConsolePong {
                     case 1:
                         gameField.textArea.WriteToField("1 Mouse detected. Please move the player that will use the keyboard. " +
                             "The other player will be able to use the Mouse. ");
+                        gameField.textArea.WriteToField("Press Esc to skip this step");
                         while (lastKey == null) { Thread.Sleep(10); }
                         if (EscPressed) {
                             gameField.textArea.WriteToField("Skipping Mouse assignment");
@@ -126,6 +128,7 @@ namespace ConsolePong {
                         break;
                     default:
                         gameField.textArea.WriteToField($"Detected {ManyMouse.AmountOfMiceDetected} Mice.");
+                        gameField.textArea.WriteToField("Press Esc to skip an assignment step.");
                         gameField.textArea.WriteToField($"Please CLICK a button on LEFT Player's mouse... ");
                         ManyMouseEvent mouseEvent;
                         int numAssigned = 0;

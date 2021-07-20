@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Authors>Basement-Science</Authors>
-    <Version>1.08</Version>
+    <Version>1.09</Version>
 	
 	<Platforms>AnyCPU</Platforms>
   </PropertyGroup>
