@@ -11,7 +11,76 @@ using static System.Linq.Enumerable;
 
 namespace ConsolePong {
     class GameField {
-        char[,] chArray;
+        public class TextArea {
+            private readonly StringBuilder ClearLine;
+            private char[,] chArray; // shared with Gamefield instance
+            private string lastLine = "";
+
+            int TextAreaWidth, TextAreaHeight;
+
+            int line;
+            public TextArea(int width, int height, ref char[,] chArray) {
+                TextAreaWidth = width - 4;
+                TextAreaHeight = height - 2;
+                ClearLine = new StringBuilder(new string(' ', TextAreaWidth));
+                this.chArray = chArray;
+                line = TextAreaHeight;
+            }
+
+            public void ClearField() {
+                int startLine = line;
+                do {
+                    WriteToField(""); // increments line
+                } while (line != startLine);
+            }
+
+            public void AppendToLastLine(string text) {
+                WriteToField(lastLine + text, true);
+            }
+
+            public void WriteToField(string text, bool overWriteLast = false) {
+                if (overWriteLast) {
+                    line = line + 1 <= TextAreaHeight ? line + 1 : 0;
+                }
+
+                foreach (var line in text.Split('\n')) {
+                    if (line.Length > TextAreaWidth) {
+                        var words = line.Split(' ', StringSplitOptions.None);
+                        var rearrangedLine = new StringBuilder();
+                        foreach (var word in words) {
+                            if (rearrangedLine.Length + word.Length <= TextAreaWidth) {
+                                rearrangedLine.Append(word);
+                                if (rearrangedLine.Length+1 <= TextAreaWidth) {
+                                    rearrangedLine.Append(' ');
+                                }
+                            } else {
+                                WriteLine(rearrangedLine.ToString());
+                                rearrangedLine.Clear().Append(word).Append(' ');
+                            }
+                        }
+                        if (rearrangedLine.Length > 0) {
+                            WriteLine(rearrangedLine.ToString());
+                        }
+                    } else {
+                        WriteLine(line);
+                    }
+
+                }
+            }
+
+            private void WriteLine(string text) {
+                lastLine = text;
+                StringBuilder output = new StringBuilder(ClearLine.ToString())
+                    .OverWrite(text, TextAreaWidth/2, Misc.TextAlignment.CENTER);
+                var arr = output.ToString().ToCharArray();
+                for (int x = 0; x < TextAreaWidth; x++) {
+                    chArray[line +1, x + 2] = arr[x];
+                }
+                line = line <= 0 ? TextAreaHeight : line - 1;
+            }
+        } // end TextArea
+
+        char[,] chArray; // shared with TextArea instance
         List<Ball> balls = new();
         public Player player_1, player_2;
 
@@ -25,7 +94,9 @@ namespace ConsolePong {
 
         private readonly string FieldBorder;
         private readonly string ClearLine;
+
         private (int Left, int Top) ConsolePos_Field, ConsolePos_Score;
+        public TextArea textArea;
 
         private const char batChar = '█'; // unicode full block
         private const char borderChar = '█'; // unicode full block
@@ -71,6 +142,8 @@ namespace ConsolePong {
 
             Console.WriteLine(FieldBorder);
             ConsolePos_Field = Console.GetCursorPosition();
+            textArea = new(width, height, ref chArray);
+
             DrawField();
             Console.WriteLine(FieldBorder);
 

@@ -20,6 +20,8 @@ namespace ConsolePong {
         private static volatile bool miceInitialized = false;
         private static Key? lastKey = null;
 
+        private readonly string LoremIpsum = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.";
+
         static async Task Main(string[] args) {
             var keyboardHandler = new Task(ReadKeys);
             var mouseHandler = new Task(ProcessMice);
@@ -35,12 +37,12 @@ namespace ConsolePong {
             keyboardHandler.Start();
 
             mouseHandler.Start();
+            outputHandler.Start();
             while (!miceInitialized) {
                 Thread.Sleep(10);
             }
-            Console.WriteLine("--> Starting game...");
-            Thread.Sleep(500);
-            outputHandler.Start();
+            Thread.Sleep(750);
+            gameField.textArea.ClearField();
             ballHandler.Start();
 
             await keyboardHandler;
@@ -51,6 +53,7 @@ namespace ConsolePong {
 
         private static void ProcessMice() {
             assignMice();
+            gameField.textArea.WriteToField("--> Starting game...");
             miceInitialized = true;
             int accu_L = 0, accu_R = 0;
             while (keepRunning) {
@@ -102,10 +105,10 @@ namespace ConsolePong {
                 ManyMouse.Init();
                 switch (ManyMouse.AmountOfMiceDetected) {
                     case 0:
-                        Console.WriteLine("No Mouse detected. Only keyboard control will be available.");
+                        gameField.textArea.WriteToField("No Mouse detected. Only keyboard control will be available.");
                         break;
                     case 1:
-                        Console.WriteLine("1 Mouse detected. Please move the player that will use the keyboard. " +
+                        gameField.textArea.WriteToField("1 Mouse detected. Please move the player that will use the keyboard. " +
                             "The other player will be able to use the Mouse.");
                         while (lastKey == null) { Thread.Sleep(10); }
                         if (lastKey == Key.W || lastKey == Key.S) {
@@ -118,8 +121,8 @@ namespace ConsolePong {
                         }
                         break;
                     default:
-                        Console.Write($"Detected {ManyMouse.AmountOfMiceDetected} Mice.\n" +
-                            $"   Please CLICK a button on LEFT Player's mouse... ");
+                        gameField.textArea.WriteToField($"Detected {ManyMouse.AmountOfMiceDetected} Mice.");
+                        gameField.textArea.WriteToField($"Please CLICK a button on LEFT Player's mouse... ");
                         ManyMouseEvent mouseEvent;
                         bool allAssigned = false;
                         while (!allAssigned) {
@@ -130,14 +133,14 @@ namespace ConsolePong {
                                             // MouseButton DOWN
                                             if (mouse_L == mouseNotInitialized) {
                                                 mouse_L = mouseEvent.device;
-                                                Console.WriteLine("success!".Pastel(Color.Green));
-                                                Console.Write($"   Please CLICK a button on RIGHT Player's mouse... ");
+                                                gameField.textArea.AppendToLastLine("success!"/*.Pastel(Color.Green)*/);
+                                                gameField.textArea.WriteToField($"Please CLICK a button on RIGHT Player's mouse... ");
                                             } else {
                                                 mouse_R = mouseEvent.device;
-                                                Console.WriteLine( mouse_L != mouse_R ? 
-                                                    "success!".Pastel(Color.Green) : 
+                                                gameField.textArea.AppendToLastLine( mouse_L != mouse_R ? 
+                                                    "success!"/*.Pastel(Color.Green)*/ : 
                                                     "warning: selected the same device twice."
-                                                    .Pastel(Color.Yellow));
+                                                    /*.Pastel(Color.Yellow)*/);
                                                 allAssigned = true;
                                             }
                                         }
@@ -256,6 +259,9 @@ namespace ConsolePong {
                             } else if (update.IsReleased) {
                                 spammer_Down.stopSpam();
                             }
+                            break;
+                        case Key.Escape:
+
                             break;
                         default:
                             break;
