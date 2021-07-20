@@ -18,6 +18,7 @@ namespace ConsolePong {
         // for Thread communication
         private static volatile bool keepRunning = true;
         private static volatile bool miceInitialized = false;
+        private static volatile bool EscPressed = false;
         private static Key? lastKey = null;
 
         private readonly string LoremIpsum = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.";
@@ -109,9 +110,12 @@ namespace ConsolePong {
                         break;
                     case 1:
                         gameField.textArea.WriteToField("1 Mouse detected. Please move the player that will use the keyboard. " +
-                            "The other player will be able to use the Mouse.");
+                            "The other player will be able to use the Mouse. ");
                         while (lastKey == null) { Thread.Sleep(10); }
-                        if (lastKey == Key.W || lastKey == Key.S) {
+                        if (EscPressed) {
+                            gameField.textArea.WriteToField("Skipping Mouse assignment");
+                            EscPressed = false;
+                        } else if (lastKey == Key.W || lastKey == Key.S) {
                             mouse_L = 0;
                         } else if (lastKey == Key.Up || lastKey == Key.Down) {
                             mouse_R = 0;
@@ -124,30 +128,44 @@ namespace ConsolePong {
                         gameField.textArea.WriteToField($"Detected {ManyMouse.AmountOfMiceDetected} Mice.");
                         gameField.textArea.WriteToField($"Please CLICK a button on LEFT Player's mouse... ");
                         ManyMouseEvent mouseEvent;
-                        bool allAssigned = false;
-                        while (!allAssigned) {
+                        int numAssigned = 0;
+                        while (numAssigned < 2) {
                             while (ManyMouse.PollEvent(out mouseEvent) > 0) {
                                 switch (mouseEvent.type) {
                                     case ManyMouseEventType.MANYMOUSE_EVENT_BUTTON:
                                         if (mouseEvent.value == 1) {
                                             // MouseButton DOWN
-                                            if (mouse_L == mouseNotInitialized) {
-                                                mouse_L = mouseEvent.device;
-                                                gameField.textArea.AppendToLastLine("success!"/*.Pastel(Color.Green)*/);
-                                                gameField.textArea.WriteToField($"Please CLICK a button on RIGHT Player's mouse... ");
-                                            } else {
-                                                mouse_R = mouseEvent.device;
-                                                gameField.textArea.AppendToLastLine( mouse_L != mouse_R ? 
-                                                    "success!"/*.Pastel(Color.Green)*/ : 
-                                                    "warning: selected the same device twice."
-                                                    /*.Pastel(Color.Yellow)*/);
-                                                allAssigned = true;
+                                            switch (numAssigned) {
+                                                case 0:
+                                                    mouse_L = mouseEvent.device;
+                                                    gameField.textArea.AppendToLastLine("success!"/*.Pastel(Color.Green)*/);
+                                                    gameField.textArea.WriteToField($"Please CLICK a button on RIGHT Player's mouse... ");
+                                                    numAssigned++;
+                                                    break;
+                                                case 1:
+                                                    mouse_R = mouseEvent.device;
+                                                    gameField.textArea.AppendToLastLine(mouse_L != mouse_R ?
+                                                        "success!"/*.Pastel(Color.Green)*/ :
+                                                        "warning: selected the same device twice."
+                                                        /*.Pastel(Color.Yellow)*/);
+                                                    numAssigned++;
+                                                    break;
+                                                default:
+                                                    return;
                                             }
                                         }
                                         break;
                                     default:
                                         break;
                                 }
+                            }
+                            if (EscPressed) {
+                                gameField.textArea.AppendToLastLine("skipping.");
+                                numAssigned++;
+                                if (numAssigned == 1) {
+                                    gameField.textArea.WriteToField($"Please CLICK a button on RIGHT Player's mouse... ");
+                                }
+                                EscPressed = false;
                             }
                         }
                         break;
@@ -261,7 +279,9 @@ namespace ConsolePong {
                             }
                             break;
                         case Key.Escape:
-
+                            if (update.IsPressed) {
+                                EscPressed = true;
+                            }
                             break;
                         default:
                             break;
