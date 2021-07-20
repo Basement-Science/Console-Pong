@@ -116,9 +116,9 @@ namespace ConsolePong {
                             gameField.textArea.WriteToField("Skipping Mouse assignment");
                             EscPressed = false;
                         } else if (lastKey == Key.W || lastKey == Key.S) {
-                            mouse_L = 0;
-                        } else if (lastKey == Key.Up || lastKey == Key.Down) {
                             mouse_R = 0;
+                        } else if (lastKey == Key.Up || lastKey == Key.Down) {
+                            mouse_L = 0;
                         } else {
                             // irrelevant key was pressed. Try again.
                             goto case 1;
