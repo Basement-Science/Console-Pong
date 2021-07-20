@@ -6,7 +6,8 @@ namespace ConsolePong {
         public char symbol = '⬤'; // unicode full circle
         public (int x, int y) renderPos;
         private Vector2 pos;
-        private Vector2 moveVector = new();
+        private Vector2 moveVector;
+        public Vector2 getMoveVector() { return moveVector; }
 
         GameField gameField;
 

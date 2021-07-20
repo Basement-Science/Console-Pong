@@ -233,7 +233,7 @@ namespace ConsolePong {
 
                 if (y == yLeft) {
                     if (isBat(x, player_1)) {
-                        hitBat();
+                        hitBat(player_1);
                     } else {
                         chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
                         drainedBall(player_2, ball, x, y);
@@ -241,18 +241,24 @@ namespace ConsolePong {
                     }
                 } else if (y == yRight) {
                     if (isBat(x, player_2)) {
-                        hitBat();
+                        hitBat(player_2);
                     } else {
                         chArray[ball.renderPos.x, ball.renderPos.y] = ' ';
                         drainedBall(player_1, ball, x, y);
                         continue;
                     }
                 }
-                void hitBat() {
+                void hitBat(Player player) {
                     ball.reflect_bat();
 
                     if (Misc.random.Next(100) >= 50) {
-                        balls.Add(ball.split());
+                        var newBall = ball.split();
+                        if (player == player_1 && newBall.getMoveVector().Y < 0) {
+                            newBall.reflect_bat();
+                        } else if (player == player_2 && newBall.getMoveVector().Y > 0) {
+                            newBall.reflect_bat();
+                        } 
+                        balls.Add(newBall);
                     }
                 }
 
